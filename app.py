@@ -23,8 +23,8 @@ if os.getenv("RENDER"):   # variable injectée automatiquement par Render
 #   AUTH_PASS=votre_mot_de_passe
 # En local, les valeurs par défaut ci-dessous s'appliquent.
 
-AUTH_USER = os.getenv("AUTH_USER", "lacan")
-AUTH_PASS = os.getenv("AUTH_PASS", "recherche")
+AUTH_USER = os.getenv("AUTH_USER", "jacques")
+AUTH_PASS = os.getenv("AUTH_PASS", "lacan")
 
 def require_auth(credentials: HTTPBasicCredentials = Depends(security)):
     ok_user = secrets.compare_digest(credentials.username.encode(), AUTH_USER.encode())
