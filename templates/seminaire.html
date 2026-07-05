@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ seminaire }} — Lacan Search</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="navbar-inner">
+        <a href="/" class="navbar-brand"><span>Lacan</span> Search</a>
+        <ul class="navbar-links">
+            <li><a href="/">Recherche</a></li>
+            <li><a href="/stats">Statistiques</a></li>
+        </ul>
+        <button class="btn-theme" onclick="toggleTheme()">☾</button>
+    </div>
+</nav>
+
+<main class="page-narrow">
+
+    <p style="margin-bottom:1.25rem;">
+        <a href="/stats" style="font-size:0.88rem;color:var(--text-muted);">← Statistiques</a>
+    </p>
+
+    <div class="page-header">
+        <h1 class="page-title" style="font-style:italic;">{{ seminaire }}</h1>
+        <p class="page-subtitle">{{ lecons|length }} leçon{% if lecons|length > 1 %}s{% endif %}</p>
+    </div>
+
+    {% if lecons %}
+    <div style="display:flex;flex-direction:column;gap:0.5rem;">
+    {% for l in lecons %}
+    <a href="/lecon/{{ l.rowid }}" style="text-decoration:none;">
+        <div class="result-card" style="padding:0.9rem 1.25rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+                <span class="result-date" style="font-size:1rem;">{{ l.date }}</span>
+                <div style="display:flex;gap:0.5rem;">
+                    <span class="result-badge">p.&nbsp;{{ l.page }}</span>
+                    {% if l.taille > 0 %}
+                    <span class="result-badge text-mono">{{ "{:,}".format(l.taille // 1000) }}k</span>
+                    {% else %}
+                    <span class="result-badge" style="color:var(--text-light);">vide</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">∅</div>
+        <p>Aucune leçon trouvée pour ce séminaire.</p>
+    </div>
+    {% endif %}
+
+</main>
+
+<script>
+const html = document.documentElement;
+const saved = localStorage.getItem('theme') || 'light';
+html.setAttribute('data-theme', saved);
+function toggleTheme() {
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+}
+</script>
+</body>
+</html>

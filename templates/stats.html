@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Statistiques — Lacan Search</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="navbar-inner">
+        <a href="/" class="navbar-brand"><span>Lacan</span> Search</a>
+        <ul class="navbar-links">
+            <li><a href="/">Recherche</a></li>
+            <li><a href="/stats" class="active">Statistiques</a></li>
+        </ul>
+        <button class="btn-theme" onclick="toggleTheme()" aria-label="Basculer thème">☾</button>
+    </div>
+</nav>
+
+<main class="page">
+
+    <div class="page-header">
+        <h1 class="page-title">Statistiques</h1>
+        <p class="page-subtitle">Vue d'ensemble de l'enseignement de Lacan</p>
+    </div>
+
+    <!-- Chiffres clés -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_lecons }}</div>
+            <div class="stat-label">Leçons indexées</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">25</div>
+            <div class="stat-label">Séminaires</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">25</div>
+            <div class="stat-label">Années d'enseignement</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ "{:,}".format(total_chars // 1000) }}k</div>
+            <div class="stat-label">Caractères indexés</div>
+        </div>
+    </div>
+
+    <!-- Recherche de terme pour stats de fréquence -->
+    <div class="search-form" style="margin-bottom:1.5rem;">
+        <form method="get" id="stats-form">
+            <div class="search-row">
+                <input
+                    type="text"
+                    name="terme"
+                    class="search-input"
+                    value="{{ terme }}"
+                    placeholder="Analyser un terme : jouissance, réel, signifiant…"
+                    autocomplete="off"
+                >
+                <button type="submit" class="btn btn-primary">Analyser</button>
+                {% if terme %}
+                <a href="/stats" class="btn btn-secondary">✕</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    {% if terme and terme_stats %}
+    <!-- Résultats analyse de terme -->
+    <div class="chart-container" style="margin-bottom:1.5rem;">
+        <div class="chart-title">
+            Présence de <strong>«&nbsp;{{ terme }}&nbsp;»</strong> par séminaire
+            <span style="font-weight:400;color:var(--text-light);">
+                — {{ terme_stats|selectattr('nb_avec_terme')|list|length }} séminaire(s) concerné(s)
+            </span>
+        </div>
+
+        {% set max_pct = terme_stats|map(attribute='pct')|max %}
+        {% set max_nb = terme_stats|map(attribute='nb_avec_terme')|max %}
+
+        {% for s in terme_stats %}
+        {% if s.nb_avec_terme > 0 %}
+        <div class="bar-row">
+            <div class="bar-label" title="{{ s.seminaire }}">
+                {{ s.seminaire|replace('Séminaire ', 'Sém. ') }}
+            </div>
+            <div class="bar-track">
+                <div class="bar-fill secondary"
+                     style="width: {{ (s.nb_avec_terme / max_nb * 100)|round }}%;"
+                     title="{{ s.nb_avec_terme }} leçon(s) sur {{ s.nb_lecons }}">
+                </div>
+            </div>
+            <div class="bar-count">
+                {{ s.nb_avec_terme }}/{{ s.nb_lecons }}
+            </div>
+            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-light);width:42px;">
+                {{ s.pct }}%
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <div style="text-align:center;margin-bottom:1.5rem;">
+        <a href="/?q={{ terme }}&sort=date" class="btn btn-primary">
+            📖 Voir toutes les leçons avec «&nbsp;{{ terme }}&nbsp;»
+        </a>
+    </div>
+
+    {% endif %}
+
+    <!-- Distribution par séminaire -->
+    <div class="chart-container">
+        <div class="chart-title">Nombre de leçons par séminaire</div>
+
+        {% set max_nb = distribution|map(attribute='nb')|max %}
+
+        {% for d in distribution %}
+        <div class="bar-row">
+            <div class="bar-label" title="{{ d.seminaire }}">
+                {{ d.seminaire|replace('Séminaire ', 'Sém. ') }}
+            </div>
+            <div class="bar-track">
+                <div class="bar-fill"
+                     style="width: {{ (d.nb / max_nb * 100)|round }}%;"
+                     title="{{ d.nb }} leçons">
+                </div>
+            </div>
+            <div class="bar-count">{{ d.nb }}</div>
+            <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-light);width:60px;white-space:nowrap;">
+                {{ "{:,}".format(d.taille // 1000) }}k car.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Timeline interactive -->
+    <div class="chart-container">
+        <div class="chart-title">Chronologie (1953–1978)</div>
+        <div id="timeline" style="position:relative;height:80px;background:var(--bg-alt);border-radius:2px;overflow:hidden;">
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:0.4rem;font-family:var(--font-mono);font-size:0.72rem;color:var(--text-light);">
+            <span>1953</span><span>1960</span><span>1967</span><span>1974</span><span>1978</span>
+        </div>
+        <p style="font-size:0.8rem;color:var(--text-light);margin-top:0.5rem;font-style:italic;">
+            Survolez pour voir le séminaire
+        </p>
+    </div>
+
+    <!-- Table détaillée -->
+    <div class="chart-container">
+        <div class="chart-title">Détail par séminaire</div>
+        <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
+            <thead>
+                <tr style="border-bottom:2px solid var(--border);text-align:left;">
+                    <th style="padding:0.5rem 0.75rem;color:var(--text-muted);font-weight:700;letter-spacing:0.06em;font-size:0.78rem;text-transform:uppercase;">Séminaire</th>
+                    <th style="padding:0.5rem 0.75rem;color:var(--text-muted);font-weight:700;letter-spacing:0.06em;font-size:0.78rem;text-transform:uppercase;text-align:center;">Leçons</th>
+                    <th style="padding:0.5rem 0.75rem;color:var(--text-muted);font-weight:700;letter-spacing:0.06em;font-size:0.78rem;text-transform:uppercase;text-align:right;">Volume</th>
+                    <th style="padding:0.5rem 0.75rem;"></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for d in distribution %}
+            <tr style="border-bottom:1px solid var(--border-light);transition:background 0.15s;"
+                onmouseover="this.style.background='var(--bg-alt)'"
+                onmouseout="this.style.background=''">
+                <td style="padding:0.6rem 0.75rem;font-style:italic;">{{ d.seminaire }}</td>
+                <td style="padding:0.6rem 0.75rem;text-align:center;font-family:var(--font-mono);font-size:0.85rem;">{{ d.nb }}</td>
+                <td style="padding:0.6rem 0.75rem;text-align:right;font-family:var(--font-mono);font-size:0.82rem;color:var(--text-light);">
+                    {{ "{:,}".format(d.taille // 1000) }}k
+                </td>
+                <td style="padding:0.6rem 0.75rem;text-align:right;">
+                    <a href="/?q=*&seminaire={{ d.seminaire }}&sort=date"
+                       style="font-size:0.78rem;color:var(--link);">
+                        Parcourir →
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</main>
+
+<script>
+// Dark mode
+const html = document.documentElement;
+const saved = localStorage.getItem('theme') || 'light';
+html.setAttribute('data-theme', saved);
+function toggleTheme() {
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+}
+
+// Timeline visuelle
+const seminaires = {{ distribution | tojson }};
+const tlEl = document.getElementById('timeline');
+const START = 1953;
+const END = 1978;
+const SPAN = END - START;
+
+// Couleurs par séminaire
+const colors = [
+    '#8b1a1a','#a02020','#b52828','#c43030','#5a1a6b',
+    '#6b2080','#7c2896','#8b35a0','#1a4a8b','#2058a0',
+    '#2868b5','#3078c8','#1a6b4a','#207a55','#289060',
+    '#30a070','#6b5a1a','#806b20','#967e28','#a89035',
+    '#4a1a1a','#5a2020','#6a2828','#7a3030','#8a3838'
+];
+
+// Mapper dates séminaires (approximatif depuis les noms)
+const semData = [
+    {s:'Séminaire 1', start:1953.9, end:1954.6},
+    {s:'Séminaire 2', start:1954.9, end:1955.6},
+    {s:'Séminaire 3', start:1955.9, end:1956.6},
+    {s:'Séminaire 4', start:1956.9, end:1957.6},
+    {s:'Séminaire 5', start:1957.9, end:1958.6},
+    {s:'Séminaire 6', start:1958.9, end:1959.6},
+    {s:'Séminaire 7', start:1959.9, end:1960.6},
+    {s:'Séminaire 8', start:1960.9, end:1961.6},
+    {s:'Séminaire 9', start:1961.9, end:1962.6},
+    {s:'Séminaire 10', start:1962.9, end:1963.6},
+    {s:'Séminaire 11', start:1963.9, end:1964.6},
+    {s:'Séminaire 12', start:1964.9, end:1965.6},
+    {s:'Séminaire 13', start:1965.9, end:1966.6},
+    {s:'Séminaire 14', start:1966.9, end:1967.6},
+    {s:'Séminaire 15', start:1967.9, end:1968.5},
+    {s:'Séminaire 16', start:1968.9, end:1969.6},
+    {s:'Séminaire 17', start:1969.9, end:1970.6},
+    {s:'Séminaire 18', start:1970.9, end:1971.6},
+    {s:'Séminaire 19', start:1971.6, end:1972.6},
+    {s:'Séminaire 19 bis', start:1971.6, end:1972.6},
+    {s:'Séminaire 20', start:1972.9, end:1973.6},
+    {s:'Séminaire 21', start:1973.9, end:1974.6},
+    {s:'Séminaire 22', start:1974.9, end:1975.6},
+    {s:'Séminaire 23', start:1975.9, end:1976.6},
+    {s:'Séminaire 24', start:1976.9, end:1977.6},
+    {s:'Séminaire 25', start:1977.9, end:1978.5},
+];
+
+// Tooltip
+const tooltip = document.createElement('div');
+tooltip.style.cssText = `
+    position:fixed;background:var(--nav-bg);color:var(--nav-text);
+    padding:0.4rem 0.75rem;border-radius:3px;font-size:0.8rem;
+    pointer-events:none;display:none;z-index:1000;white-space:nowrap;
+    font-family:var(--font-serif);
+`;
+document.body.appendChild(tooltip);
+
+semData.forEach((sem, i) => {
+    const leftPct = ((sem.start - START) / SPAN) * 100;
+    const widthPct = ((sem.end - sem.start) / SPAN) * 100;
+    const row = i < 13 ? 0 : 1; // 2 rangées
+
+    const bar = document.createElement('div');
+    bar.style.cssText = `
+        position:absolute;
+        left:${leftPct}%;
+        width:${widthPct}%;
+        top:${row * 40 + 8}px;
+        height:28px;
+        background:${colors[i % colors.length]};
+        border-radius:2px;
+        opacity:0.75;
+        cursor:pointer;
+        transition:opacity 0.15s;
+    `;
+    bar.title = sem.s;
+
+    bar.addEventListener('mouseover', e => {
+        bar.style.opacity = '1';
+        tooltip.textContent = sem.s;
+        tooltip.style.display = 'block';
+    });
+    bar.addEventListener('mousemove', e => {
+        tooltip.style.left = (e.clientX + 12) + 'px';
+        tooltip.style.top = (e.clientY - 8) + 'px';
+    });
+    bar.addEventListener('mouseout', () => {
+        bar.style.opacity = '0.75';
+        tooltip.style.display = 'none';
+    });
+    bar.addEventListener('click', () => {
+        // Chercher le séminaire complet
+        const found = seminaires.find(d => d.seminaire.includes(sem.s.replace('Séminaire ', '')));
+        if (found) window.location.href = `/stats?terme={{ terme }}&seminaire=${encodeURIComponent(found.seminaire)}`;
+    });
+
+    tlEl.appendChild(bar);
+});
+</script>
+</body>
+</html>

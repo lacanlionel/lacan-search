@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Lacan Search</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<h1>Lacan Search</h1>
+
+<form method="get">
+
+    <input
+        type="text"
+        name="q"
+        value="{{ q }}"
+        placeholder="Freud, désir, langage..."
+    >
+<select name="sort">
+    <option value="score"
+        {% if sort == "score" %}selected{% endif %}>
+        Pertinence
+    </option>
+
+    <option value="date"
+        {% if sort == "date" %}selected{% endif %}>
+        Date
+    </option>
+</select>
+    <button>
+        Rechercher
+    </button>
+
+</form>
+
+
+
+{% if count %}
+<h3>{{ count }} résultats trouvés</h3>
+<p>Page {{ page }}</p>
+{% endif %}
+
+{% for r in results %}
+
+<hr>
+
+<h2>{{ r.date }}</h2>
+
+<p>
+<b>{{ r.seminaire }}</b>
+</p>
+
+<p>
+📄 Page {{ r.page }}
+</p>
+
+<p>
+<a href="/lecon/{{ r.rowid }}">
+📖 Lire la leçon complète
+</a>
+</p>
+
+<div class="extrait">
+    {{ r.extrait|safe }}
+</div>
+
+{% endfor %}
+
+<div>
+
+{% if previous_page %}
+<a href="/?q={{ q }}&sort={{ sort }}&page={{ previous_page }}">
+⬅ Page précédente
+</a>
+{% endif %}
+
+{% if next_page %}
+<a href="/?q={{ q }}&sort={{ sort }}&page={{ next_page }}">
+Page suivante ➡
+</a>
+{% endif %}
+
+</div>
+
+</body>
+</html>

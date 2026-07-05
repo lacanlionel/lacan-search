@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Résumé Local - Romans</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 40px;
+        }
+
+        .header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+        }
+
+        .security-badge {
+            display: inline-block;
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            color: #2e7d32;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin: 16px 0 0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+            font-size: 14px;
+        }
+
+        textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+        }
+
+        textarea {
+            min-height: 240px;
+        }
+
+        textarea:focus, select:focus {
+            outline: none;
+            border-color: #1976d2;
+            box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #1976d2;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            background: #1565c0;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .btn-secondary:hover {
+            background: #efefef;
+        }
+
+        .result-section {
+            display: none;
+            margin-top: 32px;
+            padding-top: 32px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .result-section.visible {
+            display: block;
+        }
+
+        .result-box {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .result-header h3 {
+            font-size: 16px;
+            color: #1a1a1a;
+        }
+
+        .copy-btn {
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #ddd;
+            color: #666;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .copy-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .summary-text {
+            line-height: 1.8;
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .summary-text ul {
+            margin-left: 20px;
+            margin-top: 8px;
+        }
+
+        .summary-text li {
+            margin-bottom: 8px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1976d2;
+            margin-top: 4px;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: #1565c0;
+            margin-top: 20px;
+        }
+
+        .error {
+            background: #ffebee;
+            border: 1px solid #ef9a9a;
+            color: #c62828;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .error.visible {
+            display: block;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: #888;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📖 Résumé de Roman - Traitement Local</h1>
+            <div class="security-badge">🔒 100% local • Aucune donnée envoyée</div>
+        </div>
+
+        <div class="error" id="errorMsg"></div>
+
+        <form id="summaryForm">
+            <div class="form-group">
+                <label for="novelText">Collez le texte de votre roman</label>
+                <textarea id="novelText" placeholder="Entrez ici le texte complet ou l'extrait à résumer..."></textarea>
+            </div>
+
+            <div class="options-grid">
+                <div class="form-group">
+                    <label for="summaryType">Type de résumé</label>
+                    <select id="summaryType">
+                        <option value="paragraph">Paragraphe fluide</option>
+                        <option value="bullets">Points à puces</option>
+                        <option value="sentences">Phrases clés</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="summaryLength">Longueur du résumé</label>
+                    <select id="summaryLength">
+                        <option value="30">Court (30% du texte)</option>
+                        <option value="50" selected>Moyen (50% du texte)</option>
+                        <option value="70">Long (70% du texte)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="btn-primary" id="summarizeBtn" onclick="generateSummary()">
+                    ✨ Générer le résumé
+                </button>
+                <button type="reset" class="btn-secondary" onclick="resetForm()">
+                    Réinitialiser
+                </button>
+            </div>
+        </form>
+
+        <div class="result-section" id="resultSection">
+            <div class="result-box">
+                <div class="result-header">
+                    <h3>Résumé généré</h3>
+                    <button type="button" class="copy-btn" onclick="copySummary()">📋 Copier</button>
+                </div>
+                <div class="summary-text" id="summaryResult"></div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">Texte original</div>
+                    <div class="stat-value" id="originalWords">0</div>
+                    <div style="font-size: 11px; color: #888; margin-top: 2px;">mots</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Résumé</div>
+                    <div class="stat-value" id="summaryWords">0</div>
+                    <div style="font-size: 11px; color: #888; margin-top: 2px;">mots</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Compression</div>
+                    <div class="stat-value" id="compressionRate">0%</div>
+                    <div style="font-size: 11px; color: #888; margin-top: 2px;">ratio</div>
+                </div>
+            </div>
+
+            <div class="info-box">
+                ℹ️ <strong>Conseils :</strong> Cet outil fournit une ébauche. N'hésitez pas à éditer et affiner le résumé pour préserver votre style d'auteur et les nuances de votre histoire.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TEXT_CHUNK_SIZE = 500;
+
+        function countWords(text) {
+            return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+        }
+
+        function getSentences(text) {
+            // Découpe par phrases (. ! ?)
+            const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+            return sentences.map(s => s.trim()).filter(s => s.length > 0);
+        }
+
+        function extractKeyPhrases(text) {
+            // Extraction simple : phrases longues et phrases avec certains mots-clés
+            const sentences = getSentences(text);
+            
+            return sentences
+                .map(s => ({
+                    text: s,
+                    length: s.split(/\s+/).length,
+                    score: calculateScore(s)
+                }))
+                .sort((a, b) => b.score - a.score);
+        }
+
+        function calculateScore(sentence) {
+            let score = 0;
+            
+            // Les phrases plus longues tendent à être plus informatives
+            score += sentence.split(/\s+/).length * 0.5;
+            
+            // Favoriser les phrases avec verbes d'action
+            const actionVerbs = ['est', 'fait', 'dit', 'commence', 'finit', 'découvre', 'rencontre', 'réalise', 'comprend', 'décide'];
+            actionVerbs.forEach(verb => {
+                if (sentence.toLowerCase().includes(verb)) score += 5;
+            });
+            
+            return score;
+        }
+
+        function generateSummaryParagraph(text, ratio) {
+            const sentences = getSentences(text);
+            const targetCount = Math.ceil(sentences.length * (ratio / 100));
+            
+            const scored = sentences.map((s, i) => ({
+                text: s,
+                originalIndex: i,
+                score: calculateScore(s)
+            }));
+
+            const selected = scored
+                .sort((a, b) => b.score - a.score)
+                .slice(0, targetCount)
+                .sort((a, b) => a.originalIndex - b.originalIndex)
+                .map(item => item.text);
+
+            return selected.join(' ');
+        }
+
+        function generateSummaryBullets(text, ratio) {
+            const sentences = getSentences(text);
+            const targetCount = Math.max(3, Math.ceil(sentences.length * (ratio / 100)));
+            
+            const scored = sentences.map((s, i) => ({
+                text: s,
+                originalIndex: i,
+                score: calculateScore(s)
+            }));
+
+            const selected = scored
+                .sort((a, b) => b.score - a.score)
+                .slice(0, targetCount)
+                .sort((a, b) => a.originalIndex - b.originalIndex)
+                .map(item => item.text);
+
+            return selected;
+        }
+
+        function generateSummary() {
+            const text = document.getElementById('novelText').value.trim();
+            const summaryType = document.getElementById('summaryType').value;
+            const summaryLength = document.getElementById('summaryLength').value;
+
+            if (!text) {
+                showError('Veuillez entrer du texte à résumer.');
+                return;
+            }
+
+            if (text.split(/\s+/).length < 20) {
+                showError('Le texte doit contenir au moins 20 mots.');
+                return;
+            }
+
+            document.getElementById('summarizeBtn').disabled = true;
+            document.getElementById('summarizeBtn').textContent = '⏳ Génération en cours...';
+
+            // Simuler un traitement asynchrone
+            setTimeout(() => {
+                try {
+                    let summary = '';
+                    let bulletPoints = [];
+
+                    if (summaryType === 'paragraph') {
+                        summary = generateSummaryParagraph(text, summaryLength);
+                    } else if (summaryType === 'bullets') {
+                        bulletPoints = generateSummaryBullets(text, summaryLength);
+                        summary = bulletPoints.join('\n');
+                    } else if (summaryType === 'sentences') {
+                        bulletPoints = generateSummaryBullets(text, summaryLength);
+                        summary = bulletPoints.join('\n');
+                    }
+
+                    const originalCount = countWords(text);
+                    const summaryCount = countWords(summary);
+                    const compression = Math.round((summaryCount / originalCount) * 100);
+
+                    // Afficher le résumé
+                    const resultDiv = document.getElementById('summaryResult');
+                    if (summaryType === 'paragraph') {
+                        resultDiv.textContent = summary;
+                    } else {
+                        resultDiv.innerHTML = '<ul>' + bulletPoints.map(bp => `<li>${bp}</li>`).join('') + '</ul>';
+                    }
+
+                    document.getElementById('originalWords').textContent = originalCount;
+                    document.getElementById('summaryWords').textContent = summaryCount;
+                    document.getElementById('compressionRate').textContent = compression + '%';
+                    
+                    document.getElementById('resultSection').classList.add('visible');
+                    hideError();
+
+                } catch (error) {
+                    showError('Erreur : ' + error.message);
+                } finally {
+                    document.getElementById('summarizeBtn').disabled = false;
+                    document.getElementById('summarizeBtn').textContent = '✨ Générer le résumé';
+                }
+            }, 100);
+        }
+
+        function copySummary() {
+            const summary = document.getElementById('summaryResult').innerText;
+            navigator.clipboard.writeText(summary).then(() => {
+                const btn = event.target;
+                const original = btn.textContent;
+                btn.textContent = '✓ Copié !';
+                setTimeout(() => { btn.textContent = original; }, 2000);
+            }).catch(() => {
+                alert('Erreur lors de la copie');
+            });
+        }
+
+        function resetForm() {
+            document.getElementById('novelText').value = '';
+            document.getElementById('resultSection').classList.remove('visible');
+            hideError();
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMsg');
+            errorEl.textContent = message;
+            errorEl.classList.add('visible');
+        }
+
+        function hideError() {
+            document.getElementById('errorMsg').classList.remove('visible');
+        }
+    </script>
+</body>
+</html>

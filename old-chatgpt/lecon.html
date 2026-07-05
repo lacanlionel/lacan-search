@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{ date }}</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<p>
+<a href="/">
+← Retour à la recherche
+</a>
+</p>
+
+<h1>{{ date }}</h1>
+
+<h2>{{ seminaire }}</h2>
+
+<p>
+📄 Page {{ page }}
+</p>
+
+<hr>
+
+<div class="texte">
+{{ contenu | replace('\n\n', '<br><br>') | safe }}
+</div>
+
+</body>
+</html>

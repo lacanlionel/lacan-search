@@ -1,0 +1,42 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 1200px;
+    margin: auto;
+    padding: 30px;
+}
+
+.extrait,
+.contenu {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 18px;
+    line-height: 1.8;
+}
+
+input {
+    width: 500px;
+    padding: 10px;
+}
+
+button {
+    padding: 10px;
+}
+
+pre {
+    white-space: pre-wrap;
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 8px;
+    font-family: inherit;
+}
+
+a {
+    text-decoration: none;
+}
+
+.texte {
+    max-width: 900px;
+    margin: auto;
+    line-height: 1.8;
+    font-size: 18px;
+}

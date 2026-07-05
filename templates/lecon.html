@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ date }} — Lacan Search</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="navbar-inner">
+        <a href="/" class="navbar-brand"><span>Lacan</span> Search</a>
+        <ul class="navbar-links">
+            <li><a href="/">Recherche</a></li>
+            <li><a href="/stats">Statistiques</a></li>
+        </ul>
+        <button class="btn-theme" onclick="toggleTheme()" aria-label="Basculer thème">☾</button>
+    </div>
+</nav>
+
+<!-- Bouton sommaire (mobile/desktop) -->
+<button class="btn-sommaire" onclick="toggleSommaire()" id="btn-sommaire" title="Sommaire du séminaire">
+    ☰ Sommaire
+</button>
+
+<!-- Panneau sommaire latéral -->
+<aside class="sommaire-panel" id="sommaire-panel">
+    <div class="sommaire-title">{{ seminaire }}</div>
+    <ul class="sommaire-list">
+        {% for l in sommaire %}
+        <li class="sommaire-item {% if l.rowid == rowid %}current{% endif %}">
+            <a href="/lecon/{{ l.rowid }}{% if q %}?q={{ q }}{% endif %}">
+                {{ l.date }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</aside>
+
+<main class="page-narrow" id="main-content">
+
+    <!-- Retour -->
+    <p style="margin-bottom:1.25rem;">
+        <a href="{{ back }}" style="font-size:0.88rem;color:var(--text-muted);">
+            ← Retour aux résultats
+        </a>
+        {% if q %}
+        <span style="color:var(--border);margin:0 0.5rem;">|</span>
+        <span style="font-size:0.88rem;color:var(--text-muted);">
+            Recherche&nbsp;: <strong>«&nbsp;{{ q }}&nbsp;»</strong>
+        </span>
+        {% endif %}
+    </p>
+
+    <!-- En-tête leçon -->
+    <div class="lecon-header">
+        <h1 class="lecon-date">{{ date }}</h1>
+        <p class="lecon-sem">{{ seminaire }}</p>
+
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;">
+            <span class="result-badge">📄 Page {{ page }}</span>
+            {% if lecon_num %}
+            <span class="result-badge">Leçon {{ lecon_num }} / {{ total_lecons }}</span>
+            {% endif %}
+            {% if nb_occurrences %}
+            <span class="result-badge" style="background:var(--mark-bg);color:var(--mark-text);">
+                {{ nb_occurrences }} occurrence{% if nb_occurrences > 1 %}s{% endif %} de «&nbsp;{{ q }}&nbsp;»
+            </span>
+            {% endif %}
+        </div>
+
+        <!-- Navigation prev/next -->
+        <div class="lecon-nav">
+            {% if prev_lecon %}
+            <a class="lecon-nav-link" href="/lecon/{{ prev_lecon.rowid }}{% if q %}?q={{ q }}&back={{ back }}{% endif %}">
+                <small>← Leçon précédente</small>
+                {{ prev_lecon.date }}
+            </a>
+            {% else %}
+            <span></span>
+            {% endif %}
+
+            <span class="lecon-pos">
+                {% if lecon_num %}{{ lecon_num }} / {{ total_lecons }}{% endif %}
+            </span>
+
+            {% if next_lecon %}
+            <a class="lecon-nav-link" href="/lecon/{{ next_lecon.rowid }}{% if q %}?q={{ q }}&back={{ back }}{% endif %}"
+               style="text-align:right;flex-direction:row-reverse;">
+                <small>Leçon suivante →</small>
+                {{ next_lecon.date }}
+            </a>
+            {% else %}
+            <span></span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Concordancier KWIC -->
+    {% if kwic_results %}
+    <div class="kwic-panel">
+        <div class="kwic-header" onclick="toggleKwic()" role="button" tabindex="0">
+            <h3>Concordancier</h3>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <span class="kwic-badge">{{ nb_occurrences }} occurrence{% if nb_occurrences > 1 %}s{% endif %}</span>
+                <span style="color:var(--text-light);font-size:0.85rem;" id="kwic-arrow">▾</span>
+            </div>
+        </div>
+        <div class="kwic-body open" id="kwic-body">
+            <table class="kwic-table">
+                <tbody>
+                {% for occ in kwic_results %}
+                <tr>
+                    <td class="kwic-left">{{ occ.gauche }}</td>
+                    <td class="kwic-word"><mark>{{ occ.mot }}</mark></td>
+                    <td class="kwic-right">{{ occ.droite }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Texte complet -->
+    <div class="lecon-texte" id="lecon-texte">
+        {% if contenu %}
+            {% for para in contenu.split('\n\n') %}
+            {% if para.strip() %}
+            <p>{{ para|safe }}</p>
+            {% endif %}
+            {% endfor %}
+        {% else %}
+            <p style="color:var(--text-muted);font-style:italic;">
+                Le texte de cette leçon n'est pas disponible dans la base de données.
+            </p>
+        {% endif %}
+    </div>
+
+    <!-- Navigation bas de page -->
+    <div class="lecon-nav" style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border-light);">
+        {% if prev_lecon %}
+        <a class="lecon-nav-link" href="/lecon/{{ prev_lecon.rowid }}{% if q %}?q={{ q }}&back={{ back }}{% endif %}">
+            <small>← Leçon précédente</small>
+            {{ prev_lecon.date }}
+        </a>
+        {% else %}<span></span>{% endif %}
+
+        <a href="{{ back }}" class="btn btn-ghost">↩ Résultats</a>
+
+        {% if next_lecon %}
+        <a class="lecon-nav-link" href="/lecon/{{ next_lecon.rowid }}{% if q %}?q={{ q }}&back={{ back }}{% endif %}"
+           style="text-align:right;flex-direction:row-reverse;">
+            <small>Leçon suivante →</small>
+            {{ next_lecon.date }}
+        </a>
+        {% else %}<span></span>{% endif %}
+    </div>
+
+</main>
+
+<script>
+// Dark mode
+const html = document.documentElement;
+const saved = localStorage.getItem('theme') || 'light';
+html.setAttribute('data-theme', saved);
+function toggleTheme() {
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+}
+
+// Sommaire latéral
+let sommaireOpen = false;
+function toggleSommaire() {
+    sommaireOpen = !sommaireOpen;
+    document.getElementById('sommaire-panel').classList.toggle('open', sommaireOpen);
+    // Scroll vers la leçon courante
+    if (sommaireOpen) {
+        const current = document.querySelector('.sommaire-item.current');
+        if (current) current.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+}
+
+// Fermer sommaire si clic à l'extérieur
+document.addEventListener('click', e => {
+    if (sommaireOpen &&
+        !document.getElementById('sommaire-panel').contains(e.target) &&
+        !document.getElementById('btn-sommaire').contains(e.target)) {
+        sommaireOpen = false;
+        document.getElementById('sommaire-panel').classList.remove('open');
+    }
+});
+
+// KWIC toggle
+function toggleKwic() {
+    const body = document.getElementById('kwic-body');
+    const arrow = document.getElementById('kwic-arrow');
+    const open = body.classList.toggle('open');
+    arrow.textContent = open ? '▾' : '▸';
+}
+
+// Navigation clavier
+document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    {% if prev_lecon %}
+    if (e.key === 'ArrowLeft') {
+        location.href = '/lecon/{{ prev_lecon.rowid }}{% if q %}?q={{ q }}&back={{ back }}{% endif %}';
+    }
+    {% endif %}
+    {% if next_lecon %}
+    if (e.key === 'ArrowRight') {
+        location.href = '/lecon/{{ next_lecon.rowid }}{% if q %}?q={{ q }}&back={{ back }}{% endif %}';
+    }
+    {% endif %}
+    if (e.key === 's') toggleSommaire();
+});
+</script>
+</body>
+</html>

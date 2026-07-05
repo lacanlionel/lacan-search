@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lacan Search{% if q %} — {{ q }}{% endif %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script>(function(){var t=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="navbar-inner">
+        <a href="/" class="navbar-brand">
+            <span>Lacan</span> Search
+        </a>
+        <ul class="navbar-links">
+            <li><a href="/" class="active">Recherche</a></li>
+            <li><a href="/stats">Statistiques</a></li>
+        </ul>
+        <button class="btn-theme" onclick="toggleTheme()" aria-label="Basculer thème">☾</button>
+    </div>
+</nav>
+
+<main class="page">
+
+    <!-- En-tête -->
+   <header class="hero">
+    <div class="hero-badge">Bibliothèque numérique</div>
+
+    <h1 class="hero-title">
+        Bibliothèque Lacan
+    </h1>
+
+    <p class="hero-subtitle">
+        Recherche plein texte dans l'ensemble des séminaires
+        de Jacques Lacan entre 1953 et 1978.
+    </p>
+
+    <div class="hero-stats">
+        <div class="hero-stat">
+            <strong>508</strong>
+            <span>Leçons</span>
+        </div>
+
+        <div class="hero-stat">
+            <strong>25</strong>
+            <span>Séminaires</span>
+        </div>
+
+        <div class="hero-stat">
+            <strong>1953–1978</strong>
+            <span>Période</span>
+        </div>
+    </div>
+</header>
+
+    <!-- Formulaire -->
+    <div class="search-form">
+        <form method="get" id="search-form">
+            <div class="search-row">
+                <input
+                    class="search-input"
+                    type="text"
+                    name="q"
+                    id="q"
+                    value="{{ q }}"
+                    placeholder="désir, jouissance, Autre, réel…"
+                    autofocus
+                    autocomplete="off"
+                    spellcheck="false"
+                >
+                <input type="hidden" name="sort" value="{{ sort }}">
+                <button type="submit" class="btn btn-primary">Rechercher</button>
+                {% if q %}
+                <a href="/" class="btn btn-secondary">✕ Effacer</a>
+                {% endif %}
+            </div>
+
+<div class="filters-panel open" id="filters-panel">
+                    <div class="filter-group">
+                    <label for="f-seminaire">Séminaire</label>
+                    <select name="seminaire" id="f-seminaire" class="filter-select">
+                        <option value="">— Tous —</option>
+                        {% for s in all_seminaires %}
+                        <option value="{{ s }}" {% if s == seminaire %}selected{% endif %}>
+                            {{ s }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="f-date-min">Date depuis</label>
+                    <input type="date" name="date_min" id="f-date-min" class="filter-input"
+                           value="{{ date_min }}" min="1953-01-01" max="1978-12-31">
+                </div>
+                <div class="filter-group">
+                    <label for="f-date-max">Date jusqu'au</label>
+                    <input type="date" name="date_max" id="f-date-max" class="filter-input"
+                           value="{{ date_max }}" min="1953-01-01" max="1978-12-31">
+                </div>
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <button type="button" class="btn btn-secondary" onclick="clearFilters()">
+                        Réinitialiser
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Aide syntaxe FTS5 -->
+<div class="syntax-help">            
+            <strong>Syntaxe&nbsp;:</strong>
+            <code>désir jouissance</code> (ET implicite) ·
+            <code>désir OR angoisse</code> ·
+            <code>"objet petit a"</code> (expression exacte) ·
+            <code>signifi*</code> (troncature)
+        </div>
+    </div>
+
+    <!-- Résultats -->
+    {% if q %}
+
+    {% if count > 0 %}
+    <div class="results-header">
+        <div class="results-count">
+            {{ count }} leçon{% if count > 1 %}s{% endif %} trouvée{% if count > 1 %}s{% endif %}
+            {% if seminaire %}&thinsp;· <em style="font-size:0.9rem;color:var(--text-muted)">{{ seminaire }}</em>{% endif %}
+        </div>
+        <div class="sort-switch">
+
+    <a
+        href="?q={{ q }}&sort=score&seminaire={{ seminaire }}&date_min={{ date_min }}&date_max={{ date_max }}"
+        class="sort-pill {% if sort == 'score' %}active{% endif %}">
+        Pertinence
+    </a>
+
+    <a
+        href="?q={{ q }}&sort=date&seminaire={{ seminaire }}&date_min={{ date_min }}&date_max={{ date_max }}"
+        class="sort-pill {% if sort == 'date' %}active{% endif %}">
+        Chronologie
+    </a>
+
+</div>
+    </div>
+
+    {% for r in results %}
+    <article class="result-card">
+        <div class="result-top">
+
+    <div class="result-meta">
+
+        <span class="result-date">
+            {{ r.date }}
+        </span>
+
+        <span class="result-seminaire">
+            {{ r.seminaire }}
+        </span>
+
+    </div>
+
+    <div class="result-side">
+
+        <span class="result-badge">
+            p. {{ r.page }}
+        </span>
+
+        {% if sort == 'score' %}
+        <span class="result-badge">
+            {{ r.score }}
+        </span>
+        {% endif %}
+
+    </div>
+
+</div>
+        <div class="result-actions">
+            <a class="result-link"
+               href="/lecon/{{ r.rowid }}?q={{ q }}&back={{ request.url }}">
+                📖 Lire la leçon
+            </a>
+        </div>
+        <div class="extrait">{{ r.extrait|safe }}</div>
+    </article>
+    {% endfor %}
+
+    <nav class="pagination">
+        {% if previous_page %}
+        <a href="?q={{ q }}&sort={{ sort }}&seminaire={{ seminaire }}&date_min={{ date_min }}&date_max={{ date_max }}&page={{ previous_page }}">
+            ← Page précédente
+        </a>
+        {% endif %}
+        <span class="pagination-info">Page {{ page }}</span>
+        {% if next_page %}
+        <a href="?q={{ q }}&sort={{ sort }}&seminaire={{ seminaire }}&date_min={{ date_min }}&date_max={{ date_max }}&page={{ next_page }}">
+            Page suivante →
+        </a>
+        {% endif %}
+    </nav>
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">∅</div>
+        <p>Aucune leçon ne correspond à <strong>«&nbsp;{{ q }}&nbsp;»</strong>.</p>
+        <p class="mt-1">Essayez un terme plus court, ou utilisez la troncature&nbsp;: <code>{{ q[:4] }}*</code></p>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- État initial : liste des séminaires -->
+   <div class="seminaires-grid">
+
+    {% for s in all_seminaires %}
+
+    <a
+        href="/stats?terme=&seminaire={{ s }}"
+        class="seminaire-card">
+
+        <div class="seminaire-card-title">
+            {{ s }}
+        </div>
+
+    </a>
+
+    {% endfor %}
+
+</div>     
+    {% endif %}
+
+</main>
+
+<script>
+// Dark mode
+const html = document.documentElement;
+const saved = localStorage.getItem('theme') || 'light';
+html.setAttribute('data-theme', saved);
+
+function toggleTheme() {
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+}
+
+// Filtres
+
+function clearFilters() {
+    document.getElementById('f-seminaire').value = '';
+    document.getElementById('f-date-min').value = '';
+    document.getElementById('f-date-max').value = '';
+}
+
+// Keyboard shortcut : / pour focus recherche
+document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement !== document.getElementById('q')) {
+        e.preventDefault();
+        document.getElementById('q').focus();
+    }
+});
+
+
+</script>
+
+<footer style="margin-top:3rem;padding:1.25rem 2rem;border-top:1px solid var(--border);background:var(--bg-alt);font-size:0.8rem;color:var(--text-muted);text-align:center;line-height:1.8;">
+    <div style="max-width:var(--max-width);margin:auto;">
+        Logiciel réalisé par <strong style="color:var(--text);">Lionel Broye</strong>
+        &nbsp;·&nbsp;
+        <a href="https://creativecommons.org/licenses/by/4.0/deed.fr" target="_blank" rel="noopener"
+           style="color:var(--link);text-decoration:none;" title="Creative Commons Attribution 4.0">
+            <img src="https://licensebuttons.net/l/by/4.0/80x15.png" alt="CC BY 4.0"
+                 style="vertical-align:middle;margin:0 0.3rem;border:none;"> CC BY 4.0
+        </a>
+        &nbsp;·&nbsp; Partage libre du logiciel
+        <br>
+        <span style="font-size:0.76rem;">
+            Les textes des séminaires sont la propriété de leurs ayants droit
+            &nbsp;·&nbsp; Usage strictement personnel et de recherche
+        </span>
+    </div>
+</footer>
+</body>
+</html>
