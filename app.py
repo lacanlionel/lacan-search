@@ -23,8 +23,8 @@ if os.getenv("RENDER"):   # variable injectée automatiquement par Render
 #   AUTH_PASS=votre_mot_de_passe
 # En local, les valeurs par défaut ci-dessous s'appliquent.
 
-AUTH_USER = os.getenv("AUTH_USER", "jacques")
-AUTH_PASS = os.getenv("AUTH_PASS", "lacan")
+AUTH_USER = os.getenv("AUTH_USER", "lacan")
+AUTH_PASS = os.getenv("AUTH_PASS", "recherche")
 
 def require_auth(credentials: HTTPBasicCredentials = Depends(security)):
     ok_user = secrets.compare_digest(credentials.username.encode(), AUTH_USER.encode())
@@ -51,6 +51,15 @@ RESULTS_PER_PAGE = 50
 
 def get_conn():
     return sqlite3.connect(DB)
+
+
+def sort_sem_key(s):
+    m = re.search(r'Séminaire (\d+)(?: bis)?', s)
+    if m:
+        n = int(m.group(1))
+        bis = 0.5 if 'bis' in s else 0
+        return n + bis
+    return 999
 
 
 def clean_text(text):
@@ -255,6 +264,73 @@ def lecon(
             "seminaire": seminaire,
             "page": page_debut,
             "contenu": contenu
+        }
+    )
+
+
+@app.get("/stats", response_class=HTMLResponse)
+def stats(
+    request: Request,
+    _: str = Depends(require_auth),
+    terme: str = ""
+):
+    conn = get_conn()
+
+    # Liste des séminaires
+    seminaire_rows = conn.execute(
+        "SELECT DISTINCT seminaire FROM lecons ORDER BY seminaire"
+    ).fetchall()
+    all_seminaires = sorted(
+        [r[0].strip() for r in seminaire_rows],
+        key=sort_sem_key
+    )
+
+    # Stats générales
+    total_lecons = conn.execute("SELECT COUNT(*) FROM lecons").fetchone()[0]
+    total_chars = conn.execute("SELECT SUM(LENGTH(contenu)) FROM lecons").fetchone()[0]
+
+    # Distribution par séminaire
+    dist_rows = conn.execute(
+        "SELECT seminaire, COUNT(*) as nb, SUM(LENGTH(contenu)) as taille FROM lecons GROUP BY seminaire"
+    ).fetchall()
+    distribution = sorted(
+        [{"seminaire": r[0].strip(), "nb": r[1], "taille": r[2]} for r in dist_rows],
+        key=lambda x: sort_sem_key(x["seminaire"])
+    )
+
+    # Recherche de terme pour stats
+    terme_stats = []
+    if terme.strip():
+        rows = conn.execute(
+            """
+            SELECT seminaire, COUNT(*) as nb
+            FROM lecons
+            WHERE lecons MATCH ?
+            GROUP BY seminaire
+            """,
+            (terme,)
+        ).fetchall()
+        by_sem = {r[0].strip(): r[1] for r in rows}
+        for d in distribution:
+            terme_stats.append({
+                "seminaire": d["seminaire"],
+                "nb_lecons": d["nb"],
+                "nb_avec_terme": by_sem.get(d["seminaire"], 0),
+                "pct": round(100 * by_sem.get(d["seminaire"], 0) / d["nb"], 1) if d["nb"] else 0
+            })
+
+    conn.close()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="stats.html",
+        context={
+            "total_lecons": total_lecons,
+            "total_chars": total_chars,
+            "distribution": distribution,
+            "terme": terme,
+            "terme_stats": terme_stats,
+            "all_seminaires": all_seminaires,
         }
     )
 
